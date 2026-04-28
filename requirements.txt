@@ -1,0 +1,15 @@
+anthropic>=0.40.0
+moviepy>=2.0.0
+Pillow>=10.0.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+numpy>=1.24.0
+fastapi>=0.110.0
+uvicorn>=0.29.0
+pydantic>=2.0.0
+elevenlabs>=1.0.0
+openai>=1.0.0
+edge-tts>=6.1.0
+playwright>=1.44.0
+certifi>=2024.0.0
+python-multipart>=0.0.9

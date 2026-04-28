@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>syncinUS Bot</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #08080f;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid #1e1e30;
+    position: sticky;
+    top: 0;
+    background: #08080fcc;
+    backdrop-filter: blur(12px);
+    z-index: 50;
+  }
+
+  .logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: #ff6b35; }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  .stats {
+    font-size: 13px;
+    color: #666;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: opacity .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .4; cursor: default; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #ff6b35, #ffb347);
+    color: #000;
+  }
+  .btn-secondary {
+    background: #1e1e30;
+    color: #fff;
+    border: 1px solid #2e2e4a;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: #aaa;
+    border: 1px solid #2e2e4a;
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+  .btn-tiktok {
+    background: linear-gradient(135deg, #ff6b35, #ffb347);
+    color: #000;
+    padding: 7px 14px;
+    font-size: 13px;
+    width: 100%;
+  }
+  .btn-copy {
+    background: #1e1e30;
+    color: #ccc;
+    border: 1px solid #2e2e4a;
+    padding: 7px 14px;
+    font-size: 13px;
+    width: 100%;
+  }
+  .btn-copy.copied { color: #4caf50; border-color: #4caf50; }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 80px 20px;
+    color: #444;
+  }
+  .empty h2 { font-size: 20px; margin-bottom: 8px; }
+  .empty p  { font-size: 14px; }
+
+  /* ── Video Grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+    padding: 28px 32px;
+  }
+
+  .card {
+    background: #111120;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #1e1e30;
+    transition: border-color .2s, transform .2s;
+  }
+  .card:hover { border-color: #ff6b3550; transform: translateY(-2px); }
+
+  .video-wrap {
+    position: relative;
+    aspect-ratio: 9/16;
+    background: #000;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .video-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .play-btn {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.3);
+    transition: opacity .2s;
+  }
+  .play-btn svg { filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
+  .video-wrap:hover .play-btn { opacity: 0; }
+
+  .uploaded-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #4caf50;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  .card-body { padding: 14px 16px 16px; }
+
+  .card-title {
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .badge {
+    display: inline-block;
+    background: #ff6b3520;
+    color: #ff6b35;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .card-date { font-size: 11px; color: #555; }
+
+  .card-actions { display: flex; flex-direction: column; gap: 7px; }
+
+  /* ── Modal ── */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+  }
+  .overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: #111120;
+    border: 1px solid #2e2e4a;
+    border-radius: 18px;
+    padding: 32px;
+    width: 420px;
+    max-width: 95vw;
+    transform: translateY(12px);
+    transition: transform .2s;
+  }
+  .overlay.open .modal { transform: translateY(0); }
+
+  .modal h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .modal p  { font-size: 13px; color: #666; margin-bottom: 24px; }
+
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  select, .toggle-row {
+    width: 100%;
+    background: #08080f;
+    border: 1px solid #2e2e4a;
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    appearance: none;
+    cursor: pointer;
+  }
+  select:focus { outline: none; border-color: #ff6b35; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: default;
+  }
+  .toggle-label { font-size: 14px; color: #ccc; }
+  .toggle-sub   { font-size: 11px; color: #555; margin-top: 2px; }
+
+  .toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute;
+    inset: 0;
+    background: #2e2e4a;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .slider:before {
+    content: "";
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .2s;
+  }
+  .toggle input:checked + .slider { background: #ff6b35; }
+  .toggle input:checked + .slider:before { transform: translateX(20px); }
+
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .modal-actions .btn { flex: 1; padding: 12px; font-size: 15px; }
+
+  /* ── Progress bar ── */
+  .progress-wrap {
+    background: #1e1e30;
+    border-radius: 8px;
+    height: 6px;
+    overflow: hidden;
+    margin: 12px 0 6px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #ff6b35, #ffb347);
+    border-radius: 8px;
+    transition: width .4s;
+    width: 0%;
+  }
+  .progress-msg { font-size: 13px; color: #888; text-align: center; }
+
+  /* ── Background Indicator ── */
+  #bgIndicator {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: #1e1e30;
+    border: 1px solid #ff6b3540;
+    border-radius: 20px;
+    padding: 6px 14px 6px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ff6b35;
+    cursor: pointer;
+    transition: opacity .2s;
+  }
+  #bgIndicator:hover { opacity: .8; }
+  #bgIndicator .bg-spinner {
+    width: 14px; height: 14px;
+    border: 2px solid #ff6b3540;
+    border-top-color: #ff6b35;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+  }
+  #bgIndicator .bg-sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: #888;
+    margin-left: 2px;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: #1e1e30;
+    border: 1px solid #2e2e4a;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 200;
+    transition: transform .3s;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: #4caf50; color: #4caf50; }
+  .toast.error   { border-color: #f44336; color: #f44336; }
+
+  /* ── Video Lightbox ── */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.92);
+    z-index: 150;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+  }
+  .lightbox.open { opacity: 1; pointer-events: all; }
+
+  .lightbox video {
+    max-height: 90vh;
+    max-width: 90vw;
+    border-radius: 12px;
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 28px;
+    cursor: pointer;
+    opacity: .7;
+  }
+  .lightbox-close:hover { opacity: 1; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 32px;
+    border-bottom: 1px solid #1e1e30;
+    margin-top: 0;
+  }
+  .tab {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+    margin-bottom: -1px;
+  }
+  .tab:hover { color: #aaa; }
+  .tab.active { color: #fff; border-bottom-color: #ff6b35; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── Analytics ── */
+  .analytics-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 32px 0;
+  }
+  .analytics-header h2 { font-size: 18px; font-weight: 700; }
+  .analytics-header p  { font-size: 13px; color: #555; margin-top: 2px; }
+
+  .analytics-table {
+    width: calc(100% - 64px);
+    margin: 20px 32px;
+    border-collapse: collapse;
+  }
+  .analytics-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 0 16px 10px;
+    border-bottom: 1px solid #1e1e30;
+  }
+  .analytics-table th.num { text-align: right; }
+  .analytics-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #111120;
+    vertical-align: middle;
+  }
+  .analytics-table tr:hover td { background: #111120; }
+
+  .ath-thumb {
+    width: 36px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #1e1e30;
+  }
+  .ath-title {
+    font-size: 13px;
+    font-weight: 600;
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ath-link { font-size: 11px; color: #555; text-decoration: none; }
+  .ath-link:hover { color: #ff6b35; }
+
+  .stat-num {
+    text-align: right;
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-num.views  { color: #fff; }
+  .stat-num.likes  { color: #ff6b35; }
+  .stat-num.comments { color: #ffb347; }
+  .stat-num.shares   { color: #4fc3f7; }
+
+  .stat-label {
+    font-size: 11px;
+    color: #555;
+    text-align: right;
+  }
+
+  .analytics-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #444;
+  }
+  .analytics-empty h3 { font-size: 17px; margin-bottom: 8px; }
+  .analytics-empty p  { font-size: 13px; margin-bottom: 20px; }
+
+  .last-updated { font-size: 12px; color: #555; padding: 0 32px 24px; }
+
+  /* ── Live indicator ── */
+  .live-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    margin-right: 5px;
+    vertical-align: middle;
+    animation: live-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74,222,128,.6); }
+    50%       { opacity: .7; box-shadow: 0 0 0 5px rgba(74,222,128,0); }
+  }
+
+  /* ── Number flash on change ── */
+  @keyframes num-flash {
+    0%   { color: #4ade80; }
+    100% { color: inherit; }
+  }
+  .num-updated {
+    animation: num-flash .8s ease-out forwards;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #333;
+    border-top-color: #ff6b35;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">sync<span>in</span> <span style="color:#555;font-weight:400;font-size:14px">bot</span></div>
+  <div class="header-right">
+    <span class="stats" id="statsText"></span>
+    <div id="bgIndicator" onclick="openModal()" title="Klicken um Details zu sehen">
+      <div class="bg-spinner"></div>
+      <span id="bgIndicatorText">Generiert…</span>
+      <span class="bg-sub" id="bgIndicatorSub"></span>
+    </div>
+    <button class="btn btn-secondary" id="cacheBtn" onclick="prefetchCache()" title="Videos für alle Themen vorherunterladen">⬇ Cache aufbauen</button>
+    <button class="btn btn-primary" onclick="openModal()">+ Neues Video</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tab active" data-tab="videos"    onclick="switchTab('videos')">Videos</div>
+  <div class="tab"        data-tab="zeitplan"  onclick="switchTab('zeitplan')">Schedule</div>
+  <div class="tab"        data-tab="analytics" onclick="switchTab('analytics')">Analytics</div>
+  <div class="tab"        data-tab="logs"      onclick="switchTab('logs')">Logs</div>
+</nav>
+
+<!-- Tab: Videos -->
+<div id="tab-videos" class="tab-content active">
+  <div id="videoGrid" class="grid"></div>
+</div>
+
+<!-- Tab: Schedule -->
+<div id="tab-zeitplan" class="tab-content">
+  <div style="max-width:680px;margin:32px auto;padding:0 24px">
+
+    <!-- Recovery-Banner (versteckt wenn nicht aktiv) -->
+    <div id="recoveryBanner" style="display:none;background:#1a0a0a;border:1px solid #f8717144;
+         border-radius:14px;padding:20px 24px;margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:16px">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#f87171;margin-bottom:4px">
+            ⏸ Recovery-Modus aktiv
+          </div>
+          <div id="recoveryText" style="font-size:13px;color:#888"></div>
+        </div>
+        <button onclick="resumeNow()"
+          style="background:#f8717120;border:1px solid #f87171;color:#f87171;border-radius:8px;
+                 padding:8px 16px;cursor:pointer;font-size:13px;white-space:nowrap;transition:all .2s"
+          onmouseover="this.style.background='#f8717140'" onmouseout="this.style.background='#f8717120'">
+          Jetzt fortsetzen
+        </button>
+      </div>
+    </div>
+
+    <!-- Auto-Schedule -->
+    <div style="background:#111120;border:1px solid #1e1e30;border-radius:16px;padding:28px 32px;margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">Auto-Schedule</h2>
+          <p style="font-size:13px;color:#666">Jeden Slot einmal täglich ausführen — Uhrzeit &amp; Topic frei wählbar</p>
+        </div>
+        <label class="toggle" title="Schedule aktivieren">
+          <input type="checkbox" id="scheduleEnabled" onchange="saveSchedule()">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <!-- Slot-Liste -->
+      <div id="slotList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px"></div>
+
+      <button onclick="addSlot()"
+        style="width:100%;padding:10px;background:transparent;border:1px dashed #2e2e4a;color:#888;border-radius:10px;cursor:pointer;font-size:13px;transition:all .2s"
+        onmouseover="this.style.borderColor='#ff6b35';this.style.color='#ff6b35'"
+        onmouseout="this.style.borderColor='#2e2e4a';this.style.color='#888'">
+        + Slot hinzufügen
+      </button>
+
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button onclick="pauseNow(7)"
+          style="flex:1;padding:9px;background:#f8717110;border:1px solid #f87171;color:#f87171;
+                 border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s"
+          onmouseover="this.style.background='#f8717125'" onmouseout="this.style.background='#f8717110'">
+          ⏸ 7 Tage pausieren
+        </button>
+        <button onclick="pauseNow(3)"
+          style="flex:1;padding:9px;background:#fb923c10;border:1px solid #fb923c;color:#fb923c;
+                 border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s"
+          onmouseover="this.style.background='#fb923c25'" onmouseout="this.style.background='#fb923c10'">
+          ⏸ 3 Tage pausieren
+        </button>
+      </div>
+      <div id="scheduleStatus" style="font-size:13px;color:#666;margin-top:10px;text-align:center"></div>
+    </div>
+
+    <!-- Upload-Warteschlange -->
+    <div style="background:#111120;border:1px solid #1e1e30;border-radius:16px;padding:28px 32px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div>
+          <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">Upload-Warteschlange</h2>
+          <p style="font-size:13px;color:#666">Videos zu einem bestimmten Zeitpunkt automatisch hochladen</p>
+        </div>
+        <button class="btn btn-ghost" onclick="loadQueue()">↻ Refresh</button>
+      </div>
+      <div id="queueList">
+        <div style="text-align:center;color:#555;font-size:13px;padding:24px 0">
+          No videos in der Warteschlange.<br>
+          Gehe zu <strong>Videos</strong> und klicke auf "Planen".
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab: Analytics -->
+<div id="tab-analytics" class="tab-content">
+  <div class="analytics-header">
+    <div>
+      <h2>TikTok Performance</h2>
+      <p>Stats direkt aus deinem Creator Center</p>
+      <div id="cloudModeBadge" style="display:none;margin-top:6px;font-size:11px;background:#1e1e30;border:1px solid #2e2e4a;color:#aaa;border-radius:6px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px">
+        ☁️ <span>Cloud-Modus — sync über <code style="color:#ff6b35;font-size:11px">python3 sync_to_railway.py</code></span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+        <div style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#4ade80">
+          <span class="live-dot"></span>LIVE
+        </div>
+        <div id="lastUpdatedCounter" style="font-size:11px;color:#555"></div>
+      </div>
+      <button class="btn btn-primary" id="refreshBtn" onclick="refreshAnalytics()">
+        Stats abrufen
+      </button>
+    </div>
+  </div>
+
+  <div id="analyticsContent">
+    <div class="analytics-empty">
+      <h3>Noch keine Daten</h3>
+      <p id="analyticsEmptyText">Klick auf "Stats abrufen" — ein Browser öffnet sich kurz und liest deine TikTok-Stats aus.</p>
+      <button class="btn btn-primary" onclick="refreshAnalytics()">Stats abrufen</button>
+    </div>
+  </div>
+  <!-- Beste Posting-Zeiten -->
+  <div id="bestTimesSection" style="padding:0 32px 32px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div>
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:2px">Beste Posting-Zeiten</h3>
+        <p style="font-size:12px;color:#555">Basierend auf deinen bisherigen Views nach Uhrzeit</p>
+      </div>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="loadBestTimes()">↻ Analysieren</button>
+    </div>
+    <div id="bestTimesContent" style="display:flex;gap:10px;flex-wrap:wrap">
+      <span style="color:#444;font-size:13px">Noch keine Analyse — klick auf "Analysieren".</span>
+    </div>
+  </div>
+
+  <!-- Wachstums-Verlauf -->
+  <div id="analyticsHistory" style="padding:24px 32px 32px"></div>
+  <div class="last-updated" id="lastUpdated"></div>
+</div>
+
+<!-- Tab: Logs -->
+<div id="tab-logs" class="tab-content">
+  <div style="max-width:900px;margin:32px auto;padding:0 24px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:4px">Bot-Logs</h2>
+        <p style="font-size:13px;color:#666">Letzte Aktivitäten und Error</p>
+      </div>
+      <button class="btn btn-ghost" onclick="loadLogs()">↻ Refresh</button>
+    </div>
+    <div id="logContainer"
+      style="background:#0a0a14;border:1px solid #1e1e30;border-radius:12px;padding:20px;
+             font-family:monospace;font-size:12px;line-height:1.7;max-height:600px;overflow-y:auto">
+      <span style="color:#555">Logs werden geladen…</span>
+    </div>
+  </div>
+</div>
+
+<!-- Generierungs-Modal -->
+<div class="overlay" id="genOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <h2>Neues Video</h2>
+      <button id="modalForceClose" onclick="forceCloseModal()" style="display:none;background:none;border:none;color:#555;font-size:22px;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <p>Topic und Länge auswählen, dann generieren.</p>
+
+    <div class="form-row">
+      <label>Topic</label>
+      <select id="topicSelect">
+        <option value="">Zufällig</option>
+        <option value="science">Wissenschaft</option>
+        <option value="history">Geschichte</option>
+        <option value="nature">Natur</option>
+        <option value="technology">Technologie</option>
+        <option value="space">Weltall</option>
+        <option value="animals">Tiere</option>
+        <option value="psychology">Psychologie</option>
+        <option value="food">Essen</option>
+        <option value="geography">Geografie</option>
+        <option value="human body">Menschlicher Körper</option>
+        <option value="pop culture">Popkultur</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>Anzahl Videos</label>
+      <div style="display:flex;align-items:center;gap:12px">
+        <input type="range" id="batchCount" min="1" max="50" value="1"
+          oninput="updateBatchCount(this.value)"
+          style="flex:1;accent-color:#ff6b35">
+        <span id="batchCountLabel" style="font-size:22px;font-weight:800;color:#ff6b35;min-width:32px;text-align:right">1</span>
+      </div>
+      <div id="batchTimeHint" style="font-size:11px;color:#555;margin-top:6px"></div>
+    </div>
+
+    <div class="form-row">
+      <label>Länge</label>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Langes Video (~1 Minute)</div>
+          <div class="toggle-sub">Kurz = 15–25 Sek.</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="longToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Progress (nur sichtbar während Generierung) -->
+    <div id="progressSection" style="display:none">
+      <!-- Batch-Übersicht (nur bei count > 1) -->
+      <div id="batchOverview" style="display:none;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span style="font-size:13px;color:#888">Fortschritt</span>
+          <span id="batchCounter" style="font-size:13px;font-weight:700;color:#ff6b35"></span>
+        </div>
+        <div style="background:#1e1e30;border-radius:6px;height:6px;overflow:hidden;margin-bottom:10px">
+          <div id="batchBar" style="height:100%;background:linear-gradient(90deg,#ff6b35,#ffb347);border-radius:6px;transition:width .4s;width:0%"></div>
+        </div>
+      </div>
+      <!-- Aktuelles Video -->
+      <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="progress-msg" id="progressMsg">Startet...</div>
+    </div>
+
+    <div class="modal-actions" id="modalActions">
+      <button class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="startGenerate()">Generatingn</button>
+    </div>
+  </div>
+</div>
+
+<!-- Queue-Modal -->
+<div class="overlay" id="queueOverlay" onclick="closeQueueModal(event)">
+  <div class="modal" style="max-width:400px">
+    <h2 style="margin-bottom:6px">Upload planen</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:20px">Wann soll dieses Video hochgeladen werden?</p>
+    <input type="hidden" id="queueFilename">
+    <input type="hidden" id="queueCaption">
+    <div class="form-row">
+      <label>Datum &amp; Uhrzeit</label>
+      <input type="datetime-local" id="queueDateTime"
+        style="background:#08080f;border:1px solid #2e2e4a;color:#fff;border-radius:8px;
+               padding:9px 14px;font-size:14px;width:100%;color-scheme:dark">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="document.getElementById('queueOverlay').classList.remove('open')">Abbrechen</button>
+      <button class="btn btn-primary" onclick="confirmQueue()">Planen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Video Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <video id="lightboxVideo" controls></video>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+let currentJob = null;
+let pollInterval = null;
+
+// ── Videos laden ──────────────────────────────────────────────────────────────
+
+async function loadVideos() {
+  const res  = await fetch('/api/videos');
+  const data = await res.json();
+  const grid = document.getElementById('videoGrid');
+  const stats = document.getElementById('statsText');
+
+  stats.textContent = `${data.length} Video${data.length !== 1 ? 's' : ''}`;
+
+  if (data.length === 0) {
+    grid.innerHTML = `
+      <div class="empty" style="grid-column:1/-1">
+        <h2>Noch keine Videos</h2>
+        <p>Klick auf "+ Neues Video" um loszulegen.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = data.map(v => `
+    <div class="card" id="card-${v.filename}">
+      <div class="video-wrap" onclick="openLightbox('/videos/${v.filename}')">
+        <video src="/videos/${v.filename}" preload="metadata" muted></video>
+        <div class="play-btn">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="24" fill="rgba(0,0,0,.5)"/>
+            <polygon points="19,14 37,24 19,34" fill="white"/>
+          </svg>
+        </div>
+        ${v.uploaded ? '<div class="uploaded-badge">✓ Gepostet</div>' : ''}
+      </div>
+      <div class="card-body">
+        <div class="card-title" title="${v.title}">${v.title || v.filename}</div>
+        <div class="card-meta">
+          ${v.topic ? `<span class="badge">${v.topic}</span>` : ''}
+          <span class="card-date">${v.created} · ${v.size_mb} MB</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-copy" onclick="copyCaption(this, \`${escJs(v.caption)}\`)">
+            Caption kopieren
+          </button>
+          ${!v.uploaded && !v.caption ? `<div style="font-size:11px;color:#ff6b35;margin-bottom:6px">
+            ⚠️ Keine Caption — bitte vor dem Upload eintragen:
+          </div>
+          <textarea id="cap-${v.filename}" placeholder="Caption + Hashtags..."
+            style="width:100%;background:#08080f;border:1px solid #ff6b3560;color:#fff;border-radius:6px;
+                   padding:8px;font-size:12px;resize:none;height:60px;margin-bottom:6px"
+          ></textarea>` : ''}
+          <button class="btn btn-tiktok btn ${v.uploaded ? 'btn-ghost' : ''}"
+                  id="upload-btn-${v.filename}"
+                  onclick="uploadVideo('${v.filename}')">
+            ${v.uploaded ? '✓ Gepostet' : 'Auf TikTok hochladen'}
+          </button>
+          ${!v.uploaded ? `<button class="btn btn-ghost" style="font-size:11px;padding:5px 10px"
+                  onclick="markUploaded('${v.filename}')">
+            Manuell als gepostet markieren
+          </button>` : ''}
+          ${!v.uploaded ? `<button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:#a78bfa;border-color:#a78bfa40;margin-top:2px"
+                  onclick="openQueueModal('${v.filename}', \`${escJs(v.caption)}\`)">
+            🕐 Planen
+          </button>` : ''}
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;color:#ff4444;border-color:#ff444440;margin-top:2px"
+                  onclick="deleteVideo('${v.filename}', '${escJs(v.title)}')">
+            🗑 Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escJs(str) {
+  return (str || '').replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+}
+
+// ── Caption kopieren ──────────────────────────────────────────────────────
+
+function copyCaption(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Kopiert!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Caption kopieren';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+
+async function uploadVideo(filename) {
+  const btn = document.getElementById(`upload-btn-${filename}`);
+  btn.disabled = true;
+  btn.textContent = 'Browser öffnet sich...';
+
+  // Manuelle Caption aus Textarea falls vorhanden
+  const capEl = document.getElementById(`cap-${filename}`);
+  const customCaption = capEl ? capEl.value.trim() : '';
+  const url = customCaption
+    ? `/api/upload/${filename}?custom_caption=${encodeURIComponent(customCaption)}`
+    : `/api/upload/${filename}`;
+  await fetch(url, { method: 'POST' });
+  showToast('Browser öffnet sich – TikTok Upload startet', 'success');
+
+  // Status pollen
+  const poll = setInterval(async () => {
+    const res  = await fetch(`/api/upload-status/${filename}`);
+    const data = await res.json();
+    if (data.status === 'done') {
+      clearInterval(poll);
+      showToast('Video erfolgreich gepostet!', 'success');
+      loadVideos();
+    } else if (data.status.startsWith('error')) {
+      clearInterval(poll);
+      btn.disabled = false;
+      btn.textContent = 'Auf TikTok hochladen';
+      showToast('Upload fehlgeschlagen', 'error');
+    }
+  }, 3000);
+}
+
+// ── Generate video ──────────────────────────────────────────────────────────
+
+function openModal() {
+  document.getElementById('genOverlay').classList.add('open');
+
+  if (currentJob || currentBatch) {
+    // Generation läuft — Fortschritt anzeigen
+    document.getElementById('modalActions').style.display = 'none';
+    document.getElementById('progressSection').style.display = 'block';
+    document.getElementById('progressBar').style.width = _displayedProgress + '%';
+    if (currentBatch) {
+      document.getElementById('batchOverview').style.display = 'block';
+    }
+  } else {
+    // Frisches Modal
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('batchOverview').style.display = 'none';
+    document.getElementById('modalActions').style.display = 'flex';
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('progressMsg').textContent = 'Startet...';
+    document.getElementById('batchCount').value = '1';
+    document.getElementById('batchCountLabel').textContent = '1';
+    document.getElementById('modalForceClose').style.display = 'none';
+    _displayedProgress = 0;
+  }
+}
+
+function closeModal() {
+  document.getElementById('genOverlay').classList.remove('open');
+  // Polling läuft im Hintergrund weiter
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('genOverlay')) closeModal();
+}
+
+let currentBatch = null;
+
+async function startGenerate() {
+  const topic = document.getElementById('topicSelect').value;
+  const long  = document.getElementById('longToggle').checked;
+  const count = parseInt(document.getElementById('batchCount').value) || 1;
+
+  document.getElementById('modalActions').style.display = 'none';
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('modalForceClose').style.display = 'none';
+  _displayedProgress = 0;
+
+  if (count > 1) {
+    // ── Batch-Modus ──────────────────────────────────────────────────────────
+    document.getElementById('batchOverview').style.display = 'block';
+    document.getElementById('batchCounter').textContent = `0 / ${count}`;
+    document.getElementById('batchBar').style.width = '0%';
+
+    const res  = await fetch(`/api/generate-batch?count=${count}&topic=${encodeURIComponent(topic)}&long=${long}`, { method: 'POST' });
+    const data = await res.json();
+    currentBatch = data.batch_id;
+    pollInterval = setInterval(pollBatch, 1500);
+  } else {
+    // ── Einzel-Modus ─────────────────────────────────────────────────────────
+    document.getElementById('batchOverview').style.display = 'none';
+    const res  = await fetch(`/api/generate?topic=${encodeURIComponent(topic)}&long=${long}`, { method: 'POST' });
+    const data = await res.json();
+    currentJob = data.job_id;
+    pollInterval = setInterval(pollJob, 1500);
+    setTimeout(() => {
+      const btn = document.getElementById('modalForceClose');
+      if (btn && currentJob) btn.style.display = 'block';
+    }, 30000);
+  }
+}
+
+let _displayedProgress = 0;
+let _analyticsSortKey = 'views';
+let _analyticsSortDir = -1; // -1 = desc, 1 = asc
+let _analyticsData    = [];
+
+function _modalOpen() {
+  return document.getElementById('genOverlay').classList.contains('open');
+}
+
+function _setIndicator(text, sub = '') {
+  const el = document.getElementById('bgIndicator');
+  el.style.display = 'flex';
+  document.getElementById('bgIndicatorText').textContent = text;
+  document.getElementById('bgIndicatorSub').textContent  = sub;
+}
+
+function _hideIndicator() {
+  document.getElementById('bgIndicator').style.display = 'none';
+}
+
+async function pollJob() {
+  if (!currentJob) return;
+  let data;
+  try {
+    const res = await fetch(`/api/jobs/${currentJob}`);
+    data = await res.json();
+  } catch (e) { return; }
+
+  const target = data.progress;
+  if (target > _displayedProgress) {
+    _displayedProgress = target;
+  } else if (_displayedProgress >= 55 && _displayedProgress < 93 && data.status === 'running') {
+    _displayedProgress = Math.min(_displayedProgress + 0.5, 93);
+  }
+
+  // Header-Indicator immer aktualisieren
+  _setIndicator('Generiert…', data.message);
+
+  // Modal nur updaten wenn offen
+  if (_modalOpen()) {
+    document.getElementById('progressBar').style.width = _displayedProgress + '%';
+    document.getElementById('progressMsg').textContent = data.message;
+  }
+
+  if (data.status === 'done') {
+    clearInterval(pollInterval);
+    currentJob = null;
+    _hideIndicator();
+    showToast('Video erstellt! ✓', 'success');
+    loadVideos();
+    if (_modalOpen()) {
+      document.getElementById('progressBar').style.width = '100%';
+      setTimeout(() => document.getElementById('genOverlay').classList.remove('open'), 600);
+    }
+  } else if (data.status === 'error') {
+    clearInterval(pollInterval);
+    currentJob = null;
+    _hideIndicator();
+    showToast('Error: ' + data.message, 'error');
+    if (_modalOpen()) {
+      document.getElementById('progressMsg').textContent = '❌ ' + data.message;
+      document.getElementById('modalActions').style.display = 'flex';
+    }
+  }
+}
+
+async function pollBatch() {
+  if (!currentBatch) return;
+  let data;
+  try {
+    const res = await fetch(`/api/batch/${currentBatch}`);
+    data = await res.json();
+  } catch (e) { return; }
+
+  const total  = data.total || 1;
+  const done   = data.done  || 0;
+  const jobPct = data.job_progress || 0;
+
+  // Header-Indicator
+  _setIndicator(`Video ${data.current || done + 1} / ${total}`, data.job_message || data.message || '');
+
+  // Fortschrittsbalken aktuelles Video
+  if (jobPct > _displayedProgress) {
+    _displayedProgress = jobPct;
+  } else if (_displayedProgress >= 55 && _displayedProgress < 93 && data.status === 'running') {
+    _displayedProgress = Math.min(_displayedProgress + 0.5, 93);
+  }
+  if (done > 0 && jobPct < 10 && _displayedProgress > 50) _displayedProgress = 0;
+
+  // Modal nur updaten wenn offen
+  if (_modalOpen()) {
+    document.getElementById('batchCounter').textContent  = `${done} / ${total}`;
+    document.getElementById('batchBar').style.width      = Math.round(done / total * 100) + '%';
+    document.getElementById('progressBar').style.width   = _displayedProgress + '%';
+    document.getElementById('progressMsg').textContent   = data.job_message || data.message || '';
+  }
+
+  if (data.status === 'done') {
+    clearInterval(pollInterval);
+    currentBatch = null;
+    _hideIndicator();
+    showToast(`${data.videos?.length || total} Videos fertig! ✓`, 'success');
+    loadVideos();
+    if (_modalOpen()) {
+      document.getElementById('batchBar').style.width  = '100%';
+      document.getElementById('progressBar').style.width = '100%';
+      document.getElementById('batchCounter').textContent = `${total} / ${total}`;
+      setTimeout(() => document.getElementById('genOverlay').classList.remove('open'), 800);
+    }
+  }
+}
+
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+
+function openLightbox(src) {
+  const lb  = document.getElementById('lightbox');
+  const vid = document.getElementById('lightboxVideo');
+  vid.src = src;
+  vid.play();
+  lb.classList.add('open');
+}
+
+function closeLightbox() {
+  const lb  = document.getElementById('lightbox');
+  const vid = document.getElementById('lightboxVideo');
+  lb.classList.remove('open');
+  vid.pause();
+  vid.src = '';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+async function prefetchCache() {
+  const btn = document.getElementById('cacheBtn');
+  btn.disabled = true;
+  btn.textContent = '⬇ Lädt...';
+
+  await fetch('/api/prefetch-cache', { method: 'POST' });
+
+  const poll = setInterval(async () => {
+    const res  = await fetch('/api/prefetch-status');
+    const data = await res.json();
+    btn.textContent = `⬇ ${data.message}`;
+    if (data.status === 'done') {
+      clearInterval(poll);
+      btn.disabled = false;
+      btn.textContent = `⬇ Cache (${data.total_cached} Videos)`;
+      showToast(data.message, 'success');
+    } else if (data.status === 'error') {
+      clearInterval(poll);
+      btn.disabled = false;
+      btn.textContent = '⬇ Cache aufbauen';
+    }
+  }, 3000);
+}
+
+function forceCloseModal() {
+  clearInterval(pollInterval);
+  currentJob = null;
+  document.getElementById('genOverlay').classList.remove('open');
+  document.getElementById('modalForceClose').style.display = 'none';
+  loadVideos();
+}
+
+async function markUploaded(filename) {
+  await fetch(`/api/mark-uploaded/${filename}`, { method: 'POST' });
+  showToast('Als gepostet markiert', 'success');
+  loadVideos();
+}
+
+async function deleteVideo(filename, title) {
+  if (!confirm(`"${title || filename}" wirklich löschen?\nDas kann nicht rückgängig gemacht werden.`)) return;
+  const res  = await fetch(`/api/videos/${filename}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (data.status === 'deleted') {
+    document.getElementById(`card-${filename}`)?.remove();
+    showToast('Video gelöscht', 'success');
+    loadVideos();
+  } else {
+    showToast('Error beim Delete', 'error');
+  }
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${name}"]`).classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+  if (name === 'analytics') { loadAnalytics(); _startLastUpdatedCounter(); }
+  if (name === 'zeitplan')  { loadSchedule(); loadQueue(); }
+  if (name === 'logs')      loadLogs();
+}
+
+// ── Schedule ──────────────────────────────────────────────────────────────────
+
+const TOPIC_OPTIONS = [
+  ['', 'Zufällig'], ['science','Wissenschaft'], ['history','Geschichte'],
+  ['nature','Natur'], ['technology','Technologie'], ['space','Weltall'],
+  ['animals','Tiere'], ['psychology','Psychologie'], ['food','Essen'],
+  ['geography','Geografie'], ['human body','Menschlicher Körper'], ['pop culture','Popkultur'],
+];
+
+let _unuploadedVideos = [];   // Cache der nicht-hochgeladenen Videos
+
+async function _loadUnuploaded() {
+  try {
+    const res = await fetch('/api/videos/unuploaded');
+    _unuploadedVideos = await res.json();
+  } catch(e) { _unuploadedVideos = []; }
+}
+
+function _topicSelectHTML(value = '') {
+  const opts = TOPIC_OPTIONS.map(([v, l]) =>
+    `<option value="${v}"${v === value ? ' selected' : ''}>${l}</option>`
+  ).join('');
+  return `<select class="slot-topic" onchange="saveSchedule()"
+    style="flex:1;min-width:0;background:#08080f;border:1px solid #2e2e4a;color:#fff;border-radius:8px;padding:8px 10px;font-size:13px">${opts}</select>`;
+}
+
+function _videoPickerHTML(filename = '') {
+  if (_unuploadedVideos.length === 0) {
+    return `<span style="flex:1;font-size:12px;color:#666;padding:8px 10px">Keine nicht-hochgeladenen Videos vorhanden</span>`;
+  }
+  const opts = _unuploadedVideos.map(v =>
+    `<option value="${v.filename}"${v.filename === filename ? ' selected' : ''}>${v.title.substring(0,40)} (${v.created})</option>`
+  ).join('');
+  return `<select class="slot-filename" onchange="saveSchedule()"
+    style="flex:1;min-width:0;background:#08080f;border:1px solid #a78bfa44;color:#fff;border-radius:8px;padding:8px 10px;font-size:13px">
+    <option value="">— Video wählen —</option>${opts}</select>`;
+}
+
+function _renderSlots(slots) {
+  const list = document.getElementById('slotList');
+  list.innerHTML = '';
+  slots.forEach((slot, i) => {
+    const mode  = slot.mode || 'new';
+    const right = mode === 'existing' ? _videoPickerHTML(slot.filename || '')
+                : mode === 'auto'     ? `<span style="flex:1;font-size:12px;color:#666;padding:8px 10px">Vorhandenes Video nehmen — sonst neu generieren</span>`
+                :                       _topicSelectHTML(slot.topic || '');
+    const modeColor = mode === 'existing' ? '#a78bfa' : mode === 'auto' ? '#4ade80' : '#ff6b35';
+
+    const row = document.createElement('div');
+    row.className = 'slot-row';
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#08080f;border:1px solid #1e1e30;border-radius:10px;padding:10px 12px';
+    row.innerHTML = `
+      <span style="font-size:11px;color:#444;min-width:12px">${i + 1}</span>
+
+      <input type="time" class="slot-time" value="${slot.time || '18:00'}" onchange="saveSchedule()"
+        style="background:transparent;border:1px solid #2e2e4a;color:#fff;border-radius:8px;
+               padding:6px 10px;font-size:14px;font-weight:700;width:100px;flex-shrink:0">
+
+      <select class="slot-mode" onchange="onSlotModeChange(this)" data-index="${i}"
+        style="background:#08080f;border:1px solid ${modeColor}44;color:${modeColor};
+               border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;flex-shrink:0;cursor:pointer">
+        <option value="auto"${mode === 'auto' ? ' selected' : ''}>⚡ Auto</option>
+        <option value="new"${mode === 'new' ? ' selected' : ''}>✦ Neu generieren</option>
+        <option value="existing"${mode === 'existing' ? ' selected' : ''}>📁 Vorhandenes</option>
+      </select>
+
+      <div class="slot-right" style="flex:1;min-width:0">${right}</div>
+
+      <button onclick="removeSlot(${i})" title="Slot entfernen"
+        style="background:transparent;border:none;color:#444;font-size:16px;cursor:pointer;
+               padding:0 2px;flex-shrink:0;transition:color .15s"
+        onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#444'">✕</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function onSlotModeChange(select) {
+  const row   = select.closest('.slot-row');
+  const right = row.querySelector('.slot-right');
+  const mode  = select.value;
+  const color = mode === 'existing' ? '#a78bfa' : mode === 'auto' ? '#4ade80' : '#ff6b35';
+  select.style.borderColor = color + '44';
+  select.style.color       = color;
+  right.innerHTML = mode === 'existing' ? _videoPickerHTML('')
+                  : mode === 'auto'     ? `<span style="flex:1;font-size:12px;color:#666;padding:8px 10px">Vorhandenes Video nehmen — sonst neu generieren</span>`
+                  :                       _topicSelectHTML('');
+  saveSchedule();
+}
+
+function _collectSlots() {
+  return Array.from(document.querySelectorAll('.slot-row')).map(row => {
+    const mode = row.querySelector('.slot-mode').value;
+    return {
+      time:     row.querySelector('.slot-time').value || '18:00',
+      mode,
+      topic:    mode === 'new'      ? (row.querySelector('.slot-topic')?.value    || '') : '',
+      filename: mode === 'existing' ? (row.querySelector('.slot-filename')?.value || '') : '',
+      long:     false,
+    };
+  });
+}
+
+async function loadSchedule() {
+  await _loadUnuploaded();
+  const res = await fetch('/api/schedule');
+  const cfg = await res.json();
+  document.getElementById('scheduleEnabled').checked = cfg.enabled;
+  const slots = cfg.slots?.length ? cfg.slots : [{ time: '18:00', mode: 'new', topic: '' }];
+  _renderSlots(slots);
+  _updateScheduleStatus(cfg);
+
+  // Recovery-Banner
+  const banner = document.getElementById('recoveryBanner');
+  if (cfg.recovery_until) {
+    const d = new Date(cfg.recovery_until);
+    const pad = n => String(n).padStart(2,'0');
+    const dateStr = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
+    document.getElementById('recoveryText').textContent =
+      `Kein Upload bis ${dateStr}${cfg.recovery_reason ? ' — ' + cfg.recovery_reason : ''}`;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+async function pauseNow(days) {
+  if (!confirm(`Schedule für ${days} Tage pausieren?`)) return;
+  const res = await fetch(`/api/schedule/pause?days=${days}&reason=Manuell+pausiert`, { method: 'POST' });
+  const d   = await res.json();
+  showToast(`Pausiert bis ${d.recovery_until} ✓`, 'success');
+  loadSchedule();
+}
+
+async function resumeNow() {
+  if (!confirm('Recovery-Modus beenden und Schedule sofort wieder aktivieren?')) return;
+  await fetch('/api/schedule/resume', { method: 'POST' });
+  showToast('Schedule wieder aktiv ✓', 'success');
+  loadSchedule();
+}
+
+async function saveSchedule() {
+  const enabled = document.getElementById('scheduleEnabled').checked;
+  const slots   = _collectSlots();
+  const res = await fetch('/api/schedule', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ enabled, slots }),
+  });
+  const cfg = await res.json();
+  _updateScheduleStatus(cfg);
+}
+
+function addSlot() {
+  const rows     = document.querySelectorAll('.slot-row');
+  const lastTime = rows.length ? rows[rows.length - 1].querySelector('.slot-time').value : '18:00';
+  const [h, m]   = lastTime.split(':').map(Number);
+  const next     = `${String((h + 3) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  const slots    = _collectSlots();
+  slots.push({ time: next, mode: 'new', topic: '', filename: '' });
+  _renderSlots(slots);
+  saveSchedule();
+}
+
+function removeSlot(index) {
+  const slots = _collectSlots();
+  if (slots.length <= 1) { showToast('Mindestens ein Slot muss vorhanden sein', 'error'); return; }
+  slots.splice(index, 1);
+  _renderSlots(slots);
+  saveSchedule();
+}
+
+function _updateScheduleStatus(cfg) {
+  const el = document.getElementById('scheduleStatus');
+  if (!el) return;
+  if (cfg.enabled) {
+    const slots = cfg.slots || [];
+    const times = slots.map(s => {
+      const label = s.mode === 'existing' ? (s.filename ? '📁 ' + s.filename.replace('video_','').replace('.mp4','') : '📁 ?')
+                  : s.mode === 'auto'     ? '⚡ Auto'
+                  : (s.topic || 'zufällig');
+      return `<strong>${s.time}</strong> <span style="color:#888;font-size:11px">(${label})</span>`;
+    }).join(' &nbsp;·&nbsp; ');
+    el.innerHTML = `<span style="color:#4ade80">● Aktiv</span> &nbsp;${times}`;
+  } else {
+    el.innerHTML = `<span style="color:#555">● Inaktiv</span> — Schedule ist ausgeschaltet`;
+  }
+  if (cfg.recovery_until) {
+    el.innerHTML += ` &nbsp;<span style="color:#f87171;font-size:12px">⏸ Recovery bis ${cfg.recovery_until}</span>`;
+  }
+}
+
+// ── Upload-Warteschlange ──────────────────────────────────────────────────────
+
+async function loadQueue() {
+  const res  = await fetch('/api/queue');
+  const data = await res.json();
+  const el   = document.getElementById('queueList');
+  if (!data || data.length === 0) {
+    el.innerHTML = `<div style="text-align:center;color:#555;font-size:13px;padding:24px 0">
+      No videos in der Warteschlange.<br>
+      Gehe zu <strong>Videos</strong> und klicke auf "🕐 Planen".
+    </div>`;
+    return;
+  }
+  const statusColor = { waiting: '#ffb347', uploading: '#ff6b35', done: '#4ade80', error: '#ff4444' };
+  el.innerHTML = data.map(item => `
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:12px 0;border-bottom:1px solid #1e1e30">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${item.filename}
+        </div>
+        <div style="font-size:11px;color:#666;margin-top:2px">
+          🕐 ${item.scheduled_time}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-left:12px">
+        <span style="font-size:11px;font-weight:700;color:${statusColor[item.status]||'#888'};
+                     text-transform:uppercase;letter-spacing:.04em">${item.status}</span>
+        ${item.status === 'waiting' ? `
+          <button onclick="removeFromQueue('${item.filename}')"
+            style="background:none;border:none;color:#ff4444;cursor:pointer;font-size:16px;padding:2px">✕</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function openQueueModal(filename, caption) {
+  const pad  = n => String(n).padStart(2, '0');
+  const fmt  = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+  // Minimum: jetzt + 5 Minuten (damit der Queue-Processor nicht sofort feuert)
+  const minDate = new Date(Date.now() + 5 * 60_000);
+
+  // Default: heute 18:00, falls das schon vorbei ist → morgen 18:00
+  const def = new Date();
+  def.setHours(18, 0, 0, 0);
+  if (def <= minDate) def.setDate(def.getDate() + 1);
+
+  const input = document.getElementById('queueDateTime');
+  input.min   = fmt(minDate);   // Browser blockiert Vergangenheit
+  input.value = fmt(def);
+
+  document.getElementById('queueFilename').value = filename;
+  document.getElementById('queueCaption').value  = caption;
+  document.getElementById('queueOverlay').classList.add('open');
+}
+
+function closeQueueModal(e) {
+  if (e.target === document.getElementById('queueOverlay'))
+    document.getElementById('queueOverlay').classList.remove('open');
+}
+
+async function confirmQueue() {
+  const filename = document.getElementById('queueFilename').value;
+  const caption  = document.getElementById('queueCaption').value;
+  const rawDt    = document.getElementById('queueDateTime').value;
+  if (!rawDt) { showToast('Bitte Datum und Uhrzeit wählen', 'error'); return; }
+
+  // Sicherstellen dass Zeitpunkt mindestens 1 Minute in der Zukunft liegt
+  if (new Date(rawDt) <= new Date()) {
+    showToast('Bitte eine Uhrzeit in der Zukunft wählen', 'error');
+    return;
+  }
+
+  const dt     = rawDt.replace('T', ' ');
+  const params = new URLSearchParams({ filename, scheduled_time: dt, custom_caption: caption });
+  await fetch('/api/queue/add?' + params, { method: 'POST' });
+  document.getElementById('queueOverlay').classList.remove('open');
+
+  // Datum+Uhrzeit leserlich anzeigen
+  const d = new Date(rawDt);
+  const pad = n => String(n).padStart(2,'0');
+  const label = `${pad(d.getDate())}.${pad(d.getMonth()+1)}. um ${pad(d.getHours())}:${pad(d.getMinutes())} Uhr`;
+  showToast(`Geplant für ${label} ✓`, 'success');
+}
+
+async function removeFromQueue(filename) {
+  await fetch(`/api/queue/${filename}`, { method: 'DELETE' });
+  loadQueue();
+  showToast('Aus Warteschlange entfernt', 'success');
+}
+
+// ── Analytics-Verlauf ─────────────────────────────────────────────────────────
+
+async function loadAnalyticsHistory() {
+  const res  = await fetch('/api/analytics/history');
+  const data = await res.json();
+  const el   = document.getElementById('analyticsHistory');
+  if (!data || data.length < 2) { el.innerHTML = ''; return; }
+
+  const maxViews = Math.max(...data.map(d => d.total_views)) || 1;
+  const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n;
+
+  el.innerHTML = `
+    <div style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;
+                letter-spacing:.06em;margin-bottom:16px">Wachstums-Verlauf (${data.length} Snapshots)</div>
+    <div style="display:flex;align-items:flex-end;gap:6px;height:90px;margin-bottom:8px">
+      ${data.slice(-30).map(d => {
+        const h = Math.max(4, Math.round(d.total_views / maxViews * 90));
+        return `<div title="${d.timestamp}: ${fmt(d.total_views)} Aufrufe"
+          style="flex:1;min-width:8px;height:${h}px;border-radius:3px 3px 0 0;
+                 background:linear-gradient(180deg,#ff6b35,#ffb347);opacity:.85;cursor:default"></div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#444">
+      <span>${data.slice(-30)[0]?.timestamp?.slice(0,10) || ''}</span>
+      <span style="color:#888">Aufrufe gesamt</span>
+      <span>${data.slice(-1)[0]?.timestamp?.slice(0,10) || ''}</span>
+    </div>
+    <div style="display:flex;gap:24px;margin-top:14px;font-size:12px">
+      <span style="color:#555">Erster Snapshot: <strong style="color:#fff">${fmt(data[0]?.total_views||0)}</strong></span>
+      <span style="color:#555">Jetzt: <strong style="color:#ff6b35">${fmt(data.slice(-1)[0]?.total_views||0)}</strong></span>
+      <span style="color:#555">Videos: <strong style="color:#fff">${data.slice(-1)[0]?.total_videos||0}</strong></span>
+    </div>`;
+}
+
+// ── Logs ──────────────────────────────────────────────────────────────────────
+
+async function loadLogs() {
+  const res  = await fetch('/api/logs?lines=100');
+  const data = await res.json();
+  const el   = document.getElementById('logContainer');
+  if (!data.logs || data.logs.length === 0) {
+    el.innerHTML = '<span style="color:#555">Noch keine Log-Einträge.</span>';
+    return;
+  }
+  const colored = data.logs.map(line => {
+    if (line.includes('[ERROR]'))   return `<div style="color:#ff6666">${line}</div>`;
+    if (line.includes('[WARNING]')) return `<div style="color:#ffb347">${line}</div>`;
+    if (line.includes('erfolgreich') || line.includes('fertig') || line.includes('Done'))
+                                    return `<div style="color:#4ade80">${line}</div>`;
+    return `<div style="color:#888">${line}</div>`;
+  }).join('');
+  el.innerHTML = colored;
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+
+function fmtNum(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace('.0','') + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(1).replace('.0','') + 'K';
+  return n.toString();
+}
+
+function updateBatchCount(val) {
+  val = parseInt(val);
+  document.getElementById('batchCountLabel').textContent = val;
+  const hint = document.getElementById('batchTimeHint');
+  if (!hint) return;
+  const isLong = document.getElementById('longToggle')?.checked;
+  const minsPerVideo = isLong ? 4 : 2.5;
+  const totalMins = Math.round(val * minsPerVideo);
+  if (val <= 1) {
+    hint.textContent = '';
+  } else if (totalMins < 60) {
+    hint.textContent = `⏱ ca. ${totalMins} Minuten`;
+    hint.style.color = '#555';
+  } else {
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    hint.textContent = `⏱ ca. ${h}h ${m > 0 ? m + 'min' : ''} — gut für über Nacht`;
+    hint.style.color = '#ff6b35';
+  }
+}
+
+let _analyticsLastUpdated = null;   // ISO string from API
+let _lastUpdatedTimer     = null;   // setInterval handle for counter
+
+function _startLastUpdatedCounter() {
+  clearInterval(_lastUpdatedTimer);
+  _lastUpdatedTimer = setInterval(() => {
+    const el = document.getElementById('lastUpdatedCounter');
+    if (!el) return;
+    if (!_analyticsLastUpdated) {
+      el.textContent = '';
+      return;
+    }
+    const diffSec = Math.round((Date.now() - new Date(_analyticsLastUpdated).getTime()) / 1000);
+    if (diffSec < 60) {
+      el.textContent = `Zuletzt aktualisiert: vor ${diffSec}s`;
+    } else if (diffSec < 3600) {
+      el.textContent = `Zuletzt aktualisiert: vor ${Math.floor(diffSec / 60)}min`;
+    } else {
+      el.textContent = `Zuletzt aktualisiert: vor ${Math.floor(diffSec / 3600)}h`;
+    }
+  }, 1000);
+}
+
+async function loadAnalytics(silent = false) {
+  if (!silent) {
+    // Show spinner only for non-silent loads
+    const el = document.getElementById('analyticsContent');
+    if (el && el.querySelector('.analytics-empty')) {
+      // leave empty state, don't flash spinner
+    }
+  }
+  const res  = await fetch('/api/analytics');
+  const json = await res.json();
+
+  // Cloud mode: show badge + update empty state text
+  if (json.is_railway) {
+    const badge = document.getElementById('cloudModeBadge');
+    if (badge) badge.style.display = 'inline-flex';
+    const emptyText = document.getElementById('analyticsEmptyText');
+    if (emptyText) emptyText.textContent = 'Cloud-Modus: Führe python3 sync_to_railway.py auf deinem Mac aus um Analytics zu synchronisieren.';
+    const btn = document.getElementById('refreshBtn');
+    if (btn) { btn.textContent = '☁️ Sync-Anleitung'; btn.onclick = () => alert('Führe auf deinem Mac aus:\n\npython3 sync_to_railway.py\n\nDas Skript fragt nach deiner Railway-URL und pusht die lokalen Analytics dorthin.'); }
+  }
+
+  // Update last_updated from API
+  if (json.last_updated) {
+    _analyticsLastUpdated = json.last_updated;
+  }
+
+  if (silent) {
+    // Silent refresh: only update numbers if data changed
+    _renderAnalyticsSilent(json.data || []);
+  } else {
+    renderAnalytics(json.data || []);
+  }
+
+  loadAnalyticsHistory();
+  if (!silent) loadBestTimes();
+
+  // Start auto-polling if not already running
+  if (!window._analyticsPoller) {
+    window._analyticsPoller = setInterval(() => {
+      if (document.querySelector('#tab-analytics').classList.contains('active') ||
+          document.querySelector('[data-tab="analytics"]')?.classList.contains('active')) {
+        loadAnalytics(true); // silent refresh (no spinner)
+      }
+    }, 30000); // every 30 seconds
+  }
+}
+
+function _renderAnalyticsSilent(newData) {
+  if (!newData || newData.length === 0) return;
+  if (!_analyticsData || _analyticsData.length === 0) {
+    // No existing render yet — do a full render
+    renderAnalytics(newData);
+    return;
+  }
+  // Check if data has changed meaningfully before re-rendering
+  const oldTotal = _analyticsData.reduce((s, v) => s + v.views, 0);
+  const newTotal = newData.reduce((s, v) => s + v.views, 0);
+  if (oldTotal !== newTotal) {
+    renderAnalytics(newData);
+    // Flash all stat-num elements to signal an update
+    document.querySelectorAll('.stat-num').forEach(el => {
+      el.classList.remove('num-updated');
+      // Force reflow to restart animation
+      void el.offsetWidth;
+      el.classList.add('num-updated');
+    });
+    // Also flash the summary cards
+    document.querySelectorAll('[data-stat-card]').forEach(el => {
+      el.classList.remove('num-updated');
+      void el.offsetWidth;
+      el.classList.add('num-updated');
+    });
+  }
+}
+
+async function loadBestTimes() {
+  const el = document.getElementById('bestTimesContent');
+  if (!el) return;
+  el.innerHTML = '<span style="color:#555;font-size:13px">Analysiere…</span>';
+  try {
+    const res  = await fetch('/api/analytics/best-times');
+    const json = await res.json();
+    if (json.error || !json.data || json.data.length === 0) {
+      el.innerHTML = `<span style="color:#444;font-size:13px">${json.error || 'Nicht genug Daten.'}</span>`;
+      return;
+    }
+    // Top-3 als Badge, Rest als kleine Zeile
+    const top3 = json.top3 || json.data.slice(0,3);
+    const medals = ['🥇','🥈','🥉'];
+    const colors = ['#ff6b35','#888','#666'];
+    let html = '';
+    top3.forEach((item, i) => {
+      html += `
+        <div style="background:#111120;border:1px solid #1e1e30;border-radius:10px;
+                    padding:12px 18px;min-width:110px;text-align:center">
+          <div style="font-size:22px;margin-bottom:4px">${medals[i]}</div>
+          <div style="font-size:20px;font-weight:800;color:${colors[i]}">${item.label}</div>
+          <div style="font-size:11px;color:#666;margin-top:2px">⌀ ${fmtNum(item.avg_views)} Views</div>
+          <div style="font-size:10px;color:#444">${item.video_count} Video${item.video_count !== 1 ? 's' : ''}</div>
+        </div>`;
+    });
+    // Alle anderen Stunden als kompakte Liste
+    const rest = json.data.slice(3);
+    if (rest.length > 0) {
+      html += `<div style="display:flex;flex-direction:column;gap:4px;justify-content:center">`;
+      rest.slice(0, 5).forEach(item => {
+        html += `<div style="font-size:12px;color:#555">
+          ${item.label} — ⌀ ${fmtNum(item.avg_views)} Views (${item.video_count}×)
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<span style="color:#444;font-size:13px">Error beim Laden.</span>';
+  }
+}
+
+function renderAnalytics(data) {
+  _analyticsData = data;
+  const el = document.getElementById('analyticsContent');
+  const lu = document.getElementById('lastUpdated');
+
+  if (!data || data.length === 0) {
+    el.innerHTML = `
+      <div class="analytics-empty">
+        <h3>Noch keine Daten</h3>
+        <p>Klick auf "Stats abrufen" — ein Browser öffnet sich kurz und liest deine echten TikTok-Stats aus.</p>
+        <button class="btn btn-primary" onclick="refreshAnalytics()">Stats abrufen</button>
+      </div>`;
+    return;
+  }
+
+  if (_analyticsLastUpdated) {
+    lu.textContent = `Zuletzt aktualisiert: ${new Date(_analyticsLastUpdated).toLocaleString('de-DE')}`;
+  } else {
+    lu.textContent = `Zuletzt aktualisiert: ${new Date().toLocaleString('de-DE')}`;
+  }
+
+  // ── Berechnungen ──
+  const totVideos   = data.length;
+  const totViews    = data.reduce((s,v) => s + v.views, 0);
+  const totLikes    = data.reduce((s,v) => s + v.likes, 0);
+  const totComments = data.reduce((s,v) => s + v.comments, 0);
+  const totShares   = data.reduce((s,v) => s + (v.shares||0), 0);
+  const engRate     = totViews > 0 ? ((totLikes + totComments + totShares) / totViews * 100).toFixed(1) : '0.0';
+  const avgViews    = totVideos > 0 ? Math.round(totViews / totVideos) : 0;
+  const avgLikeRate = totViews > 0 ? (totLikes / totViews * 100).toFixed(1) : '0.0';
+
+  // Für jedes Video Like-Rate + Engagement-Rate berechnen
+  const enriched = data.map(v => ({
+    ...v,
+    likeRate: v.views > 0 ? (v.likes  / v.views * 100) : 0,
+    engRate:  v.views > 0 ? ((v.likes + v.comments + (v.shares||0)) / v.views * 100) : 0,
+  }));
+  const avgViewsForRank = totViews / Math.max(totVideos, 1);
+  const sortedByViews   = [...enriched].sort((a,b) => b.views - a.views);
+  const top25pct        = sortedByViews[Math.floor(sortedByViews.length * 0.25)]?.views || 0;
+  const bot25pct        = sortedByViews[Math.floor(sortedByViews.length * 0.75)]?.views || 0;
+
+  // ── Themen-Auswertung ──
+  const topicMap = {};
+  enriched.forEach(v => {
+    const t = v.topic || 'unbekannt';
+    if (!topicMap[t]) topicMap[t] = { videos: 0, views: 0, likes: 0, comments: 0 };
+    topicMap[t].videos++;
+    topicMap[t].views    += v.views;
+    topicMap[t].likes    += v.likes;
+    topicMap[t].comments += v.comments;
+  });
+  const topics   = Object.entries(topicMap).sort((a,b) => b[1].views - a[1].views);
+  const maxViews = topics[0]?.[1].views || 1;
+  const bestTopic = topics[0]?.[0] || '—';
+
+  // ── Top 3 ──
+  const top3 = [...enriched].sort((a,b) => b.views - a.views).slice(0, 3);
+  const medals = ['🥇','🥈','🥉'];
+
+  // ── Sortierte Tabelle ──
+  const sorted = [...enriched].sort((a,b) => {
+    const av = a[_analyticsSortKey] ?? 0;
+    const bv = b[_analyticsSortKey] ?? 0;
+    return _analyticsSortDir * (bv - av);
+  });
+
+  function sortTh(key, label) {
+    const active = _analyticsSortKey === key;
+    const arrow  = active ? (_analyticsSortDir === -1 ? ' ↓' : ' ↑') : '';
+    return `<th class="num" style="cursor:pointer;user-select:none;${active?'color:#ff6b35':''}"
+              onclick="sortAnalytics('${key}')">${label}${arrow}</th>`;
+  }
+
+  el.innerHTML = `
+    <!-- Gesamt-Karten -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:24px 32px 0">
+      ${[
+        ['Videos',     totVideos,   '#a78bfa', false],
+        ['Aufrufe',    totViews,    '#fff',    false],
+        ['Likes',      totLikes,    '#ff6b35', false],
+        ['Kommentare', totComments, '#ffb347', false],
+        ['Engagement', engRate,     '#4ade80', true],
+      ].map(([label, val, color, isPct]) => `
+        <div style="background:#111120;border:1px solid #1e1e30;border-radius:12px;padding:18px 20px">
+          <div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${label}</div>
+          <div style="font-size:28px;font-weight:800;color:${color};line-height:1">${isPct ? val+'%' : fmtNum(val)}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Durchschnitt-Karten -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px 32px 0">
+      ${[
+        ['Ø Aufrufe pro Video', fmtNum(avgViews), 'Durchschnitt über alle Videos'],
+        ['Ø Like-Rate',         avgLikeRate + '%', 'Likes geteilt durch Aufrufe'],
+        ['Bestes Topic',        bestTopic,          `${fmtNum(topics[0]?.[1].views||0)} Aufrufe gesamt`],
+      ].map(([label, val, sub]) => `
+        <div style="background:#0d0d1a;border:1px solid #1e1e30;border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${label}</div>
+            <div style="font-size:11px;color:#444">${sub}</div>
+          </div>
+          <div style="font-size:22px;font-weight:800;color:#fff;text-transform:capitalize">${val}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Top 3 Videos -->
+    ${top3.length > 0 ? `
+    <div style="padding:24px 32px 0">
+      <div style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">Top Videos</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${top3.map((v, i) => `
+          <div style="background:#111120;border:1px solid #1e1e30;border-radius:12px;overflow:hidden;${i===0?'border-color:#ff6b3560':''}">
+            <div style="position:relative">
+              ${v.thumbnail
+                ? `<img src="${v.thumbnail}" style="width:100%;aspect-ratio:9/5;object-fit:cover;display:block" onerror="this.style.display='none'">`
+                : `<div style="width:100%;aspect-ratio:9/5;background:#1e1e30"></div>`}
+              <div style="position:absolute;top:8px;left:8px;font-size:20px">${medals[i]}</div>
+            </div>
+            <div style="padding:12px 14px">
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px;line-height:1.3">${v.title || '—'}</div>
+              <div style="display:flex;gap:12px;font-size:12px">
+                <span style="color:#fff;font-weight:700">${fmtNum(v.views)} <span style="color:#555;font-weight:400">Aufrufe</span></span>
+                <span style="color:#ff6b35;font-weight:700">♥ ${fmtNum(v.likes)}</span>
+                <span style="color:#4ade80;font-weight:700">${v.likeRate.toFixed(1)}%</span>
+              </div>
+              ${v.href ? `<a href="${v.href}" target="_blank" style="font-size:11px;color:#555;text-decoration:none;margin-top:6px;display:inline-block">TikTok öffnen ↗</a>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- Themen-Ranking -->
+    <div style="padding:24px 32px 0">
+      <div style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">Performance nach Topic</div>
+      ${topics.map(([topic, s]) => {
+        const lr = s.views > 0 ? (s.likes / s.views * 100).toFixed(1) : '0.0';
+        return `
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span style="font-size:13px;font-weight:600;text-transform:capitalize">${topic}
+              <span style="color:#555;font-weight:400;font-size:11px;margin-left:4px">${s.videos} Video${s.videos>1?'s':''}</span>
+            </span>
+            <div style="display:flex;gap:14px;align-items:center">
+              <span style="font-size:11px;color:#4ade80;font-weight:600">${lr}% Like-Rate</span>
+              <span style="font-size:13px;color:#fff;font-weight:700">${fmtNum(s.views)}
+                <span style="color:#ff6b35;font-size:11px;margin-left:4px">♥ ${fmtNum(s.likes)}</span>
+              </span>
+            </div>
+          </div>
+          <div style="background:#1e1e30;border-radius:4px;height:6px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(s.views/maxViews*100)}%;background:linear-gradient(90deg,#ff6b35,#ffb347);border-radius:4px;transition:width .6s"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Video-Tabelle -->
+    <div style="padding:24px 32px 0">
+      <div style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px">
+        Alle Videos
+        <span style="font-size:11px;font-weight:400;color:#444;margin-left:8px">Spalte klicken zum Sortieren</span>
+      </div>
+    </div>
+    <table class="analytics-table">
+      <thead>
+        <tr>
+          <th style="width:44px"></th>
+          <th>Caption</th>
+          <th>Topic</th>
+          ${sortTh('views',    'Aufrufe')}
+          ${sortTh('likes',    'Likes')}
+          ${sortTh('likeRate', 'Like-Rate')}
+          ${sortTh('engRate',  'Engagement')}
+          ${sortTh('comments', 'Kommentare')}
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map(v => {
+          const badge   = v.views >= top25pct ? '🔥' : v.views <= bot25pct && v.views > 0 ? '❄️' : '';
+          const vColor  = v.views >= top25pct ? '#4ade80' : v.views <= bot25pct && v.views > 0 ? '#f87171' : '#fff';
+          return `
+          <tr>
+            <td>
+              ${v.thumbnail
+                ? `<img class="ath-thumb" src="${v.thumbnail}" onerror="this.style.display='none'">`
+                : `<div class="ath-thumb"></div>`}
+            </td>
+            <td>
+              <div class="ath-title">${badge ? `<span style="margin-right:5px">${badge}</span>` : ''}${v.title || '—'}</div>
+              ${v.href ? `<a class="ath-link" href="${v.href}" target="_blank">TikTok öffnen ↗</a>` : ''}
+            </td>
+            <td><span class="badge" style="text-transform:capitalize">${v.topic || '—'}</span></td>
+            <td class="stat-num views" style="color:${vColor};font-weight:700">${fmtNum(v.views)}</td>
+            <td class="stat-num likes">${fmtNum(v.likes)}</td>
+            <td class="stat-num" style="color:#4ade80">${v.likeRate.toFixed(1)}%</td>
+            <td class="stat-num" style="color:#a78bfa">${v.engRate.toFixed(1)}%</td>
+            <td class="stat-num comments">${fmtNum(v.comments)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function sortAnalytics(key) {
+  if (_analyticsSortKey === key) {
+    _analyticsSortDir *= -1;
+  } else {
+    _analyticsSortKey = key;
+    _analyticsSortDir = -1;
+  }
+  renderAnalytics(_analyticsData);
+}
+
+async function refreshAnalytics() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Browser öffnet sich...';
+
+  await fetch('/api/analytics?refresh=true');
+
+  // Pollen bis fertig
+  const poll = setInterval(async () => {
+    const res  = await fetch('/api/analytics/status');
+    const data = await res.json();
+    btn.innerHTML = `<span class="spinner"></span> ${data.message}`;
+
+    if (data.status === 'done') {
+      clearInterval(poll);
+      btn.disabled = false;
+      btn.textContent = 'Stats abrufen';
+      loadAnalytics();
+      showToast('Stats aktualisiert!', 'success');
+    } else if (data.status === 'error') {
+      clearInterval(poll);
+      btn.disabled = false;
+      btn.textContent = 'Stats abrufen';
+      showToast('Error: ' + data.message, 'error');
+    }
+  }, 2000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+loadVideos();
+setInterval(loadVideos, 15000); // alle 15s aktualisieren
+_startLastUpdatedCounter();     // Live-Zähler für Analytics starten
+</script>
+</body>
+</html>

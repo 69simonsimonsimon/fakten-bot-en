@@ -1,0 +1,51 @@
+# Secrets
+.env
+*.env
+
+# Output / generated files
+output/
+logs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temp files
+*.tmp
+*.log
+_list_*.txt
+
+# MoviePy temp files
+*TEMP_MPY_wvf_snd.mp4
+
+# Runtime files
+upload_queue.json
+dashboard/analytics_cache.json
+dashboard/analytics_history.json
+
+# Large asset files (downloaded at runtime)
+assets/backgrounds/
+assets/music/
+
+# Railway / browser auth (not needed for GitHub Actions)
+.railway_url
+.chrome_profile/
+.env.save
+
