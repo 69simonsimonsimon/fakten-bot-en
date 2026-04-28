@@ -1,11 +1,6 @@
 name: Generate Fakten Videos (EN)
 
 on:
-  schedule:
-    - cron: '30 7 * * *'   # 07:30 UTC
-    - cron: '30 11 * * *'  # 11:30 UTC
-    - cron: '30 15 * * *'  # 15:30 UTC
-    - cron: '30 20 * * *'  # 20:30 UTC
   workflow_dispatch:
 
 jobs:
