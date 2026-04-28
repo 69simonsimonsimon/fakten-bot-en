@@ -9,6 +9,38 @@ _generation_lock = threading.Lock()
 
 _CLAUDE_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5")
 
+
+def _llm_call(prompt: str, max_tokens: int = 800) -> str:
+    """Call Anthropic Claude — falls back to OpenAI GPT-4o-mini if credits exhausted."""
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if anthropic_key:
+        try:
+            client = anthropic.Anthropic(api_key=anthropic_key)
+            msg = client.messages.create(
+                model=_CLAUDE_MODEL,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return msg.content[0].text.strip()
+        except anthropic.BadRequestError as e:
+            if "credit balance" in str(e).lower():
+                import logging
+                logging.getLogger("faktbot").warning("[llm] Anthropic credits exhausted — OpenAI fallback")
+            else:
+                raise
+
+    import openai
+    oai_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if not oai_key:
+        raise RuntimeError("Neither Anthropic nor OpenAI API key available")
+    oai = openai.OpenAI(api_key=oai_key)
+    resp = oai.chat.completions.create(
+        model="gpt-4o-mini",
+        max_tokens=max_tokens,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return resp.choices[0].message.content.strip()
+
 # ── Hashtag pools ─────────────────────────────────────────────────────────────
 
 _HASHTAG_CORE = ["#fyp", "#foryou", "#facts"]
@@ -153,7 +185,6 @@ def generate_fact(topic: str = "general", long: bool = False) -> dict:
 
 
 def _generate_fact_locked(topic: str = "general", long: bool = False) -> dict:
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"].strip())
 
     fact_length = (
         "Explain the fact across 7-9 engaging sentences (English). "
@@ -267,13 +298,7 @@ Rules:
                 f"Choose a COMPLETELY different core topic this time!"
             )
 
-        message = client.messages.create(
-            model=_CLAUDE_MODEL,
-            max_tokens=1400 if long else 800,
-            messages=[{"role": "user", "content": attempt_prompt}],
-        )
-
-        raw = message.content[0].text.strip()
+        raw = _llm_call(attempt_prompt, max_tokens=1400 if long else 800)
         # Robust JSON extraction — tolerates markdown blocks and extra text
         if "```" in raw:
             import re as _re
