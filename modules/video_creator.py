@@ -275,7 +275,7 @@ def _make_multi_background(video_paths: list[str], duration: float, gradient_ind
     n        = len(video_paths)
     seg_dur  = duration / n
     segments = [_make_background(path, seg_dur, gradient_index, zoom=True) for path in video_paths]
-    return concatenate_videoclips(segments)
+    return concatenate_videoclips(segments).with_duration(duration)
 
 
 # ── Header design ─────────────────────────────────────────────────────────────
@@ -633,18 +633,13 @@ def create_video(
 
     mixed_audio = _mix_background_music(audio, total_dur)
 
-    video = CompositeVideoClip(clips, size=(WIDTH, HEIGHT)).with_audio(mixed_audio)
+    video = CompositeVideoClip(clips, size=(WIDTH, HEIGHT)).with_duration(total_dur).with_audio(mixed_audio)
+    import platform
+    _codec = "h264_videotoolbox" if platform.system() == "Darwin" else "libx264"
+    _extra = ["-b:v", "4000k", "-pix_fmt", "yuv420p", "-b:a", "192k"] if _codec == "h264_videotoolbox" else ["-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p", "-b:a", "192k"]
     video.write_videofile(
-        output_path, fps=30, codec="libx264", audio_codec="aac", logger=None,
-        ffmpeg_params=[
-            "-preset", "ultrafast",   # was: medium — ultrafast uses ~60% less RAM
-            "-crf", "26",             # was: 22 — TikTok re-encodes anyway
-            "-profile:v", "high",
-            "-level", "4.2",
-            "-pix_fmt", "yuv420p",
-            "-b:a", "192k",
-            "-threads", "2",          # was: 0 (all cores) — limits thread buffer RAM
-        ],
+        output_path, fps=30, codec=_codec, audio_codec="aac", logger=None,
+        ffmpeg_params=_extra,
     )
     audio.close()
     if mixed_audio is not audio:
