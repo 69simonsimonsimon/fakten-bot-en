@@ -81,9 +81,24 @@ def generate_and_queue(topic: str = None) -> bool:
     mb = video_path.stat().st_size / 1024 / 1024
     logger.info(f"    → {video_path.name} ({mb:.1f} MB)")
 
-    # 4. Caption
+    # 4. Caption with Stitch bait + comment hook
     description  = fact_data.get("description", fact_data["title"])
-    full_caption = description + " " + " ".join(fact_data["hashtags"])
+    _stitch_opts = [
+        "\n🎭 Stitch this with your reaction 👇",
+        "\n🎭 Duet if you already knew this 😮",
+        "\n👀 Stitch: True or False?",
+        "",
+    ]
+    _comment_opts = [
+        "\n💬 Did you know this? Comment!",
+        "\n💬 Send this to someone who won't believe it 😂",
+        "\n💬 Comment: fact or cap?",
+        "",
+    ]
+    import random as _r
+    _stitch = _r.choice(_stitch_opts)
+    _comment = _r.choice(_comment_opts)
+    full_caption = description + _stitch + _comment + "\n\n" + " ".join(fact_data["hashtags"])
 
     # 5. Bunny queue upload
     logger.info("☁️   Uploading to Bunny queue...")
