@@ -187,11 +187,15 @@ def generate_fact(topic: str = "general", long: bool = False) -> dict:
 def _generate_fact_locked(topic: str = "general", long: bool = False) -> dict:
 
     fact_length = (
-        "Explain the fact across 7-9 engaging sentences (English). "
-        "Cover the background, give examples, use specific numbers, and end with a surprising insight. "
-        "IMPORTANT: Exactly 130-145 words — no more, no less. The last sentence must be complete!"
+        "Build the fact across 7-9 sentences (English). "
+        "STRUCTURE: "
+        "Sentence 1: THE HOOK — the most shocking or unbelievable statement first. Must be strong enough to stop someone mid-scroll. "
+        "Sentences 2-3: Why is this true? Background that makes the shock even bigger. "
+        "Sentences 4-6: Concrete numbers, examples, details that make it more unbelievable. "
+        "Sentences 7-9: A surprising twist or conclusion that forces people to comment. "
+        "IMPORTANT: Minimum 150 words, maximum 165 words. Count your words. Last sentence must be complete!"
         if long else
-        "Explain the fact in 2-3 punchy sentences (English). Surprising and educational."
+        "Explain the fact in 2-3 punchy sentences (English). Strongest sentence first!"
     )
 
     used = _load_history()
@@ -258,33 +262,55 @@ Rules:
             "war":             "war & military history (shocking or little-known facts about wars, weapons, propaganda, atrocities)",
             "medicine":        "medical history (bizarre historical treatments, shocking malpractice, pharmaceutical scandals — verified facts only)",
             "survival":        "extreme survival stories (true stories about unbelievable survival under impossible conditions)",
+            # Generic topics with sharp, provocative frames
+            "animals":         "shocking animal facts — things animals do that humans can't believe: brutal hunting methods, disturbing survival strategies, animals that kill or outsmart humans",
+            "nature":          "terrifying or shocking nature facts — natural disasters, deadly phenomena, things in nature that can kill you that you never suspected",
+            "space":           "shocking space facts that reveal how dangerous, alien, or incomprehensible the universe truly is — black holes, gamma ray bursts, the inevitable death of Earth",
+            "science":         "shocking scientific facts that prove everything we think we know is wrong — quantum paradoxes, discoveries that rewrote textbooks, experiments with disturbing results",
+            "technology":      "terrifying facts about technology — how algorithms manipulate you daily, what AI already does without your knowledge, how tech companies spy on you",
+            "psychology":      "shocking facts about the human mind — how easily brains can be manipulated, psychological experiments proving how irrational and predictable humans really are",
+            "history":         "shocking historical facts deliberately hidden from school textbooks — forgotten atrocities, corrupt leaders, conspiracies that turned out to be completely true",
+            "food":            "disgusting or shocking food facts — what's really in your food, how the food industry deceives you, banned ingredients still used today in your country",
+            "geography":       "shocking geographical facts — the most dangerous places on Earth, countries with disturbing secrets, borders drawn by colonizers that still cause deaths today",
+            "human body":      "disgusting or shocking facts about the human body — parasites living inside you right now, biological processes that will disgust you, things your body does you don't know about",
         }
-        topic_desc = _provocative_topics.get(topic.lower(), topic)
+        topic_desc = _provocative_topics.get(topic.lower(), f"{topic} — pick the most shocking, outrage-inducing, or unbelievable fact about this topic")
 
-        prompt = f"""Create a fascinating, provocative fact for an English TikTok video (@syncinUS).
+        prompt = f"""Create a provocative, shareable fact for an English TikTok video (@syncinUS).
 Topic: {topic_desc}
 {avoid_block}
-Goal: The fact should shock, anger, or astound viewers enough that they HAVE to comment ("This can't be real!", "That's insane!", "I had no idea!"). Divisive or outrage-inducing facts go viral.
+
+GOAL: The video needs to be SHARED. Facts that get shared are:
+1. RAGE-BAIT: Facts that make a group of people angry or defensive ("that's not true!", "typical X!")
+2. HUMOR: Funny or absurd facts about specific groups (short people, tall people, men vs women, countries, fat people)
+3. IDENTITY-BAIT: Facts that validate one group and provoke another ("Send this to someone who is Y")
+4. DISBELIEF: Facts so absurd people HAVE to comment "that's a lie"
+5. DEBATE-STARTER: Facts that spark arguments ("Do you think this is normal?")
+
+Examples of viral titles:
+- "Short people actually live longer 😂" (rage-bait for tall people)
+- "Why overweight people feel cold less 💀"
+- "Men literally cannot understand this 😅"
+- "Why Americans are hated in Europe"
+- "What happens to your body if you never exercise"
+- "Introverts have higher IQs on average 👀"
 
 Return ONLY valid JSON (no markdown, no extra text):
 {{
-  "title": "Short, punchy title (max 6 words, English)",
+  "title": "Short, provocative title (max 7 words) — should spark curiosity + mild outrage",
   "fact": "{fact_length}",
-  "description": "A short, provocative TikTok caption (1-2 sentences, English, with 1-2 emojis). Should trigger outrage or disbelief. No more than 100 characters.",
+  "description": "TikTok caption with humor or provocation (1-2 sentences, English, 1-2 emojis). Examples: 'Send this to someone who skips leg day 😂' or 'Comment if you knew this 👇'. Max 100 characters.",
   "hashtags": ["#topic1", "#topic2", "#topic3", "#topic4"],
-  "visual_query": "2-3 English search terms for a fitting stock video (e.g. 'dark archive documents' or 'courtroom drama gavel'). Only cinematically feasible subjects — no abstract terms."
+  "visual_query": "2-3 English search terms for fitting stock video. Only cinematically feasible subjects."
 }}
 
 Rules:
-- Everything in English
-- Fact must be 100% true and verifiable — no speculation
-- Title must SHOCK immediately: concrete number + outrageous claim, or a statement that triggers disbelief
-- The fact MUST start with the most shocking sentence (hook first!)
-- Choose facts that trigger an emotional reaction: outrage, disbelief, shock, anger
-- Use concrete numbers, names, dates — nothing vague
-- For crime/history topics: show the human dimension (victims, perpetrators, consequences)
-- Description should provoke without being clickbait — the fact justifies the reaction
-- Hashtags: 4 topic-specific tags (e.g. #truecrime #dark for crime topics)"""
+- Fact must be 100% true — but the FRAMING can be funny or provocative
+- Title: direct, short, slightly exaggerated — should trigger a reaction
+- Humor about groups (short/tall, heavy/thin, men/women, nationalities) is fine if the fact is real
+- The fact MUST start with the strongest sentence (hook first!)
+- Description: call-to-action that drives sharing ("Send this to...", "Who relates?", "Comment below...")
+- No slurs or hate — facts can be edgy but must be grounded in real data"""
 
     MAX_ATTEMPTS = 5
     data = None

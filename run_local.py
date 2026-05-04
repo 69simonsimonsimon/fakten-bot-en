@@ -46,21 +46,21 @@ def generate_and_queue(topic: str = None) -> bool:
     from video_creator import create_video
 
     topic = topic or random.choice(TOPICS)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S%f")[:-3]
     audio_path = OUTPUT_DIR / f"audio_{stamp}.mp3"
     video_path = OUTPUT_DIR / f"video_{stamp}.mp4"
 
     # 1. Generate fact
     logger.info(f"💡  Generating fact — topic: {topic}")
-    fact_data = generate_fact(topic)
+    fact_data = generate_fact(topic, long=True)
     logger.info(f"    → {fact_data['title']}")
 
     # 2. TTS + Word Timings
     logger.info("🎙️   Generating voiceover (ElevenLabs)...")
     tts_text = f"{fact_data['title']}. {fact_data['fact']}"
     words = tts_text.split()
-    if len(words) > 155:
-        tts_text = " ".join(words[:155]) + "."
+    if len(words) > 165:
+        tts_text = " ".join(words[:165]) + "."
     _, word_timings = text_to_speech(tts_text, str(audio_path), topic=topic)
     logger.info(f"    → {len(word_timings)} words")
 
@@ -123,14 +123,25 @@ def generate_and_queue(topic: str = None) -> bool:
 
 
 if __name__ == "__main__":
-    topic = sys.argv[1] if len(sys.argv) > 1 else None
-    count = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    import concurrent.futures
+    topic   = sys.argv[1] if len(sys.argv) > 1 else None
+    count   = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    workers = min(count, int(sys.argv[3]) if len(sys.argv) > 3 else 3)
 
-    success = 0
-    for i in range(count):
+    done = []
+
+    def _task(i):
         if count > 1:
-            logger.info(f"\n{'='*50}\nGenerating video {i+1}/{count}\n{'='*50}")
+            logger.info(f"\n{'='*50}\nVideo {i+1}/{count}\n{'='*50}")
         if generate_and_queue(topic):
-            success += 1
+            done.append(1)
 
-    logger.info(f"\n🏁  Done: {success}/{count} videos queued on Bunny")
+    if workers > 1 and count > 1:
+        logger.info(f"🚀  Parallel: {count} videos × {workers} workers")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
+            list(ex.map(_task, range(count)))
+    else:
+        for i in range(count):
+            _task(i)
+
+    logger.info(f"\n🏁  Done: {len(done)}/{count} videos queued on Bunny")
