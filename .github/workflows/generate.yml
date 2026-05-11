@@ -27,10 +27,20 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Restore fact history (avoid repeated topics)
+        uses: actions/cache@v4
+        with:
+          path: output/fact_history.json
+          key: fact-history-en-${{ github.run_number }}
+          restore-keys: |
+            fact-history-en-
+
+      - name: Ensure output directory exists
+        run: mkdir -p output
+
       - name: Generate and queue video
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
