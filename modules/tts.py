@@ -6,7 +6,7 @@ import tempfile
 import edge_tts
 
 OPENAI_VOICE = "onyx"
-OPENAI_MODEL = "tts-1"
+OPENAI_MODEL = "tts-1-hd"
 
 
 # ── OpenAI TTS + Whisper word timings ────────────────────────────────────────

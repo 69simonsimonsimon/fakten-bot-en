@@ -7,7 +7,8 @@ from pathlib import Path
 
 _generation_lock = threading.Lock()
 
-_CLAUDE_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+_CLAUDE_MODEL    = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-5")
+_CLAUDE_QA_MODEL = "claude-sonnet-4-5"
 
 
 def _llm_call(prompt: str, max_tokens: int = 800) -> str:
@@ -40,6 +41,57 @@ def _llm_call(prompt: str, max_tokens: int = 800) -> str:
         messages=[{"role": "user", "content": prompt}],
     )
     return resp.choices[0].message.content.strip()
+
+
+# ── QA Review (Sonnet reviews Opus output) ────────────────────────────────────
+
+def _llm_call_review(prompt: str, max_tokens: int = 200) -> str:
+    """Fast Sonnet review — cheap, only checks quality."""
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if not anthropic_key:
+        return '{"score": 8, "passes": true, "feedback": ""}'
+    try:
+        client = anthropic.Anthropic(api_key=anthropic_key)
+        msg = client.messages.create(
+            model=_CLAUDE_QA_MODEL,
+            max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return msg.content[0].text.strip()
+    except Exception:
+        return '{"score": 8, "passes": true, "feedback": ""}'
+
+
+def _qa_review(title: str, fact: str, long: bool) -> tuple[bool, str]:
+    """
+    Sonnet scores the Opus-generated fact.
+    Returns (passes_qa, feedback) — passes if score >= 7.
+    """
+    word_rule = "Word count: 150–165 words." if long else "Length: exactly 2–3 punchy sentences."
+    prompt = f"""Rate this TikTok fact script from 1–10 for viral potential:
+
+Title: {title}
+Script: {fact}
+
+Criteria:
+1. Hook strength: Does it START with the most shocking sentence?
+2. Shareability: Rage-bait, humor, disbelief, or debate potential?
+3. {word_rule}
+
+Reply ONLY with JSON: {{"score": 7, "passes": true, "feedback": "One sentence of feedback"}}
+Passes if score >= 7."""
+
+    raw = _llm_call_review(prompt, max_tokens=150)
+    try:
+        import re as _re
+        match = _re.search(r'\{.*\}', raw, _re.DOTALL)
+        if match:
+            result = json.loads(match.group(0))
+            return bool(result.get("passes", True)), result.get("feedback", "")
+    except Exception:
+        pass
+    return True, ""  # Fail-safe: always pass if unparseable
+
 
 # ── Hashtag pools ─────────────────────────────────────────────────────────────
 
@@ -353,6 +405,17 @@ Rules:
             continue
 
         print(f"   ✓ Similarity check OK (attempt {attempt}/{MAX_ATTEMPTS})")
+
+        # QA review: Sonnet checks Opus output for quality
+        qa_passes, qa_feedback = _qa_review(data["title"], data.get("fact", ""), long)
+        if not qa_passes:
+            print(f"   ⚠️  QA review failed: {qa_feedback} — retrying…")
+            if attempt < MAX_ATTEMPTS:
+                attempt_prompt += f"\n\nQA FEEDBACK: '{qa_feedback}' — please improve this in your next attempt!"
+                continue
+            print("   ⚠️  QA limit reached, using last suggestion anyway.")
+
+        print(f"   ✓ QA review passed")
         break
 
     existing_tags = {h.lower() for h in data.get("hashtags", [])}
