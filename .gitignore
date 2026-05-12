@@ -2,8 +2,9 @@
 .env
 *.env
 
-# Output / generated files
-output/
+# Output / generated files — history file is committed (reliable persistence)
+output/*
+!output/fact_history.json
 logs/
 
 # Python cache

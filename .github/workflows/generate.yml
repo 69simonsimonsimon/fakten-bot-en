@@ -5,6 +5,9 @@ on:
     - cron: '0 7,11,16,20 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write   # Allow git push of history file
+
 jobs:
   generate:
     runs-on: ubuntu-latest
@@ -27,14 +30,6 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Restore fact history (avoid repeated topics)
-        uses: actions/cache@v4
-        with:
-          path: output/fact_history.json
-          key: fact-history-en-${{ github.run_number }}
-          restore-keys: |
-            fact-history-en-
-
       - name: Ensure output directory exists
         run: mkdir -p output
 
@@ -54,3 +49,11 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python3 run_local.py 2
+
+      - name: Commit updated fact history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add output/fact_history.json
+          git diff --staged --quiet && echo "No history changes" || git commit -m "chore: update fact history [skip ci]"
+          git push || echo "Nothing to push"
