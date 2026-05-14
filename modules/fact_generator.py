@@ -225,7 +225,7 @@ def _is_too_similar(title: str, fact: str, history: list[dict]) -> tuple[bool, s
         if not hist_kw:
             continue
         overlap = len(new_kw & hist_kw) / min(len(new_kw), len(hist_kw))
-        if overlap >= 0.45:
+        if overlap >= 0.30:
             return True, entry["title"]
 
     return False, ""
