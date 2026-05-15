@@ -291,7 +291,7 @@ Return ONLY valid JSON (no markdown, no extra text):
   "fact": "{fact_length}",
   "description": "A short, curiosity-building TikTok caption (1-2 sentences, English, with 1-2 fitting emojis). No more than 100 characters.",
   "hashtags": ["#popculture1", "#popculture2", "#popculture3", "#popculture4"],
-  "visual_query": "2-3 English search terms for a fitting stock video (e.g. 'concert crowd lights' or 'phone social media scroll'). Only cinematically feasible subjects — no abstract terms."
+  "visual_query": "2-3 English search terms for a CINEMATIC STOCK VIDEO matching the fact. Must be real and filmable — no CGI or illustrations. Good examples: 'ocean waves underwater', 'city timelapse night', 'crowd festival energy', 'forest sunlight mist', 'athlete running slow motion', 'ancient ruins sunlight', 'space shuttle launch'. BAD: 'dna molecule', 'brain thoughts', 'abstract technology'. Choose visually impressive footage that matches the topic."
 }}
 
 Rules:
@@ -353,7 +353,7 @@ Return ONLY valid JSON (no markdown, no extra text):
   "fact": "{fact_length}",
   "description": "TikTok caption with humor or provocation (1-2 sentences, English, 1-2 emojis). Examples: 'Send this to someone who skips leg day 😂' or 'Comment if you knew this 👇'. Max 100 characters.",
   "hashtags": ["#topic1", "#topic2", "#topic3", "#topic4"],
-  "visual_query": "2-3 English search terms for fitting stock video. Only cinematically feasible subjects."
+  "visual_query": "2-3 English search terms for a CINEMATIC STOCK VIDEO matching the fact. Must be real and filmable. Good examples: 'ocean waves underwater', 'city timelapse night', 'crowd festival energy', 'forest sunlight mist', 'ancient ruins sunlight'. BAD: 'dna molecule', 'brain abstract', 'technology'. Visually impressive and topically matching."
 }}
 
 Rules:
